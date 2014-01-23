@@ -1,0 +1,110 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+#  Version : 0.1
+#  Author  : Sylvain Costard <at> univ-rennes2.fr
+#  Université Rennes 2
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+# 02110-1301, USA.
+
+# Based on Ganeti EXtStorageProviders code (https://code.grnet.gr/projects/extstorage)
+
+"""Create a new Image inside a HP EVA 
+This program creates a new Image VD file inside a HP EVA.
+It takes it's input from environment variables. Specifically the
+following variables should be present:
+
+ - VOL_NAME        : The name of the new Image file
+ - VOL_SIZE        : The size of the new Image (in megabytes)
+ - EXTP_DISK_GROUP : The EVA disk group
+ - EXTP_RAID       : The EVA disk RAID type
+
+Return O after successfull creation, 1 on failure
+
+"""
+
+import os
+import sys
+import ConfigParser
+
+sys.path.append("/usr/share/ganeti")
+
+from ganeti import utils
+
+#Config
+config_file = "/etc/ganeti/extstorage/eva.conf"
+config = ConfigParser.SafeConfigParser()
+if not config.read(config_file):
+   raise ConfigParser.Error("Unable to read config file")
+
+manap           = config.get('eva','manap')
+login           = config.get('eva','login')
+password        = config.get('eva','password')
+array           = config.get('eva','array')
+vd_raid         = config.get('eva','vd_raid')
+disk_group      = config.get('eva','disk_group')
+cluiclient_path = config.get('eva','cluiclient_path')
+
+def ReadEnv():
+  """Read the mandatory enviromental variables
+
+  """
+  name = os.getenv("VOL_NAME")
+  if name is None:
+    sys.stderr.write('The environment variable VOL_NAME is missing.\n')
+    sys.exit(1)
+  size = str(int(os.getenv("VOL_SIZE")) // 1024)
+  if size is None:
+    sys.stderr.write('The environment variable VOL_SIZE is missing.\n')
+    sys.exit(1)
+
+  dg = os.getenv("EXTP_DISK_GROUP")
+  if dg is None:
+    dg=disk_group 	
+
+  raid = os.getenv("EXTP_RAID")
+  if raid is None:
+    raid=vd_raid
+
+  return (name, dg, raid, size)
+
+def main():
+  sys.stderr.write('Creation started...\n')
+  env = ReadEnv()
+
+  if env is None:
+    sys.stderr.write('Wrong environment. Aborting...\n')
+    sys.exit(1)
+
+  vd_name,dg, raid, vd_size = env
+
+  sys.stderr.write('name: %s, dg: %s, size: %s\n' % (vd_name, dg, vd_size))
+
+  # Create VD
+  cmd = ["%s/sbin/clui.sh" % cluiclient_path, "-c", "-u", "%s" % login, "-p", "%s" % password, "-h", "%s" % manap,
+         "-s", "%s" % array, "add vd", "%s" % vd_name, "size=%s dg=%s vrl=%s" % (vd_size, dg, raid)] 
+  result = utils.RunCmd(cmd)
+
+  if result.failed:
+    sys.stderr.write('VD creation failed (%s): %s\n' %
+                     (result.fail_reason, result.output))
+    return 1
+
+  return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

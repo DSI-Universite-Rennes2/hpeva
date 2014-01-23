@@ -4,15 +4,15 @@ hpeva
 hpeva external storage module for ganeti
 
 
-## PURPOSE
+### PURPOSE
 
  This modules makes ganeti external storage module to work with HP EVAs Systems
 
-## PREREQUISITE
+### PREREQUISITE
  * cluiclient downloadable in HP Replication Solution Manager Software (http://h20565.www2.hp.com/portal/site/hpsc/template.PAGE/public/psi/swdDetails/?sp4ts.oid=3807693&spf_p.tpst=swdMain&spf_p.prp_swdMain=wsrp-navigationalState%3DswItem%253Dco_51723_1&javax.portlet.begCacheTok=com.vignette.cachetoken&javax.portlet.endCacheTok=com.vignette.cachetoken)
  * openjdk-jre (for cluiclient)
 
-## INSTALL :
+### INSTALL :
  * Copy this directory in ExtStorage Providers search path (/srv/ganeti/extstorage, /usr/local/lib/ganeti/extstorage, /usr/lib/ganeti/extstorage, /usr/share/ganeti/extstorage)
 
  * Copy and complete eva.conf in /etc/ganeti/extstorage/
@@ -33,6 +33,6 @@ hpeva external storage module for ganeti
  * restart ganeti
 
 
-## TODO
+### TODO
   - Grow function : It seems that cluiclient does not want to resize a VD with thin provisionning disabled.
 

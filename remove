@@ -1,0 +1,106 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+#  Version : 0.1
+#  Author  : Sylvain Costard <at> univ-rennes2.fr
+#  Université Rennes 2
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+# 02110-1301, USA.
+
+# Based on Ganeti EXtStorageProviders code (https://code.grnet.gr/projects/extstorage)
+
+"""destroy an existing EVA VD 
+This program removes an existing Image from EVA
+
+ - VOL_NAME: The name of the Image to map
+
+"""
+
+
+import os
+import sys
+import ConfigParser
+
+sys.path.append("/usr/share/ganeti")
+
+from ganeti import utils
+
+# Load Config
+config_file = "/etc/ganeti/extstorage/eva.conf"
+config = ConfigParser.SafeConfigParser()
+if not config.read(config_file):
+   raise ConfigParser.Error("Unable to read config file")
+
+manap           = config.get('eva','manap')
+login           = config.get('eva','login')
+password        = config.get('eva','password')
+array           = config.get('eva','array')
+cluiclient_path = config.get('eva','cluiclient_path')
+
+def ReadEnv():
+  """Read the mandatory enviromental variables
+
+  """
+  name = os.getenv("VOL_NAME")
+  if name is None:
+    sys.stderr.write('The environment variable VOL_NAME is missing.\n')
+    sys.exit(1)
+  return (name)
+
+def main():
+  sys.stderr.write('Removal of %s ...\n' % os.getenv("VOL_NAME"))
+  env = ReadEnv()
+  if env is None:
+    sys.stderr.write('Wrong environment. Aborting...\n')
+    sys.exit(1)
+
+  vd_name = env
+
+  sys.stderr.write('name: %s\n' % (vd_name))
+
+  #Get VD uuid
+  cmd = "%s/sbin/clui.sh -c -u %s -p %s -h %s -s %s sho vd %s | awk -F ',' '{print tolower($4)}' | grep -v 'WW Lun Name' | grep - | sed 's/-//g'" % (cluiclient_path,login,password,manap,array,vd_name)
+  result = utils.RunCmd(cmd)
+  uuid = result.output
+
+
+  #Get multipath device
+  cmd = "multipath -ll 3%s | head -1 | awk '{print $1}'" % uuid.strip()
+  result = utils.RunCmd(cmd)
+  device = result.output
+
+  
+  # If device is presented -> quit
+  if device.strip():
+    sys.stderr.write('Device mapped on %s. Aborting...\n' % device)
+    sys.exit(1)
+
+
+  #Remove VD
+  cmd  = ["%s/sbin/clui.sh" % cluiclient_path , "-c", "-u", "%s" % login, "-p", "%s" % password, "-h", "%s" % manap, "-s", "%s" % array, "del vd %s " % vd_name] 
+  print cmd
+  result = utils.RunCmd(cmd)
+
+  if result.failed:
+    sys.stderr.write('VD remove failed (%s): %s\n' %
+                     (result.fail_reason, result.output))
+    return 1
+   
+  sys.exit(0)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

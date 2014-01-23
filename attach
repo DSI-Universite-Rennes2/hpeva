@@ -1,0 +1,114 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+#  Version : 0.1
+#  Author  : Sylvain Costard <at> univ-rennes2.fr
+#  Université Rennes 2
+#
+"  
+##
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+# 02110-1301, USA.
+
+# Based on Ganeti EXtStorageProviders code (https://code.grnet.gr/projects/extstorage)
+
+"""Maps an existing EVA VD to a block device
+This program maps an existing Image to a block device
+e.g. /dev/mapper/{X} and returns the device path. If the mapping
+already exists, it returns the corresponding device path.
+It takes it's input from environment variables. Specifically the
+following variables should be present:
+
+ - VOL_NAME: The name of the Image to map
+
+Returns the block device path (which maps the Image) as a string
+upon success, or 1 upon failure
+"""
+
+
+import os
+import sys
+import ConfigParser
+import subprocess
+
+sys.path.append("/usr/share/ganeti")
+
+from ganeti import utils
+
+#config read
+config_file = "/etc/ganeti/extstorage/eva.conf"
+config = ConfigParser.SafeConfigParser()
+
+if not config.read(config_file):
+   raise ConfigParser.Error("Unable to read config file")
+
+manap           = config.get('eva','manap')
+login           = config.get('eva','login')
+password        = config.get('eva','password')
+array           = config.get('eva','array')
+cluiclient_path = config.get('eva','cluiclient_path')
+
+def ReadEnv():
+  """Read the mandatory enviromental variables
+
+  """
+  name = os.getenv("VOL_NAME")
+  if name is None:
+    sys.stderr.write('The environment variable VOL_NAME is missing.\n')
+    sys.exit(1)
+  return (name)
+
+def main():
+  sys.stderr.write('Attachment started...\n')
+  env = ReadEnv()
+  if env is None:
+    sys.stderr.write('Wrong environment. Aborting...\n')
+    sys.exit(1)
+
+  vd_name = env
+
+  sys.stderr.write('name: %s\n' % (vd_name))
+
+  # Present VD
+  dom0 = utils.RunCmd("hostname | sed 's/^./\u&/;'")
+  cmd  = ["%s/sbin/clui.sh" % cluiclient_path , "-c", "-u", "%s" % login, "-p", "%s" % password, "-h", "%s" % manap,
+          "-s", "%s" % array, "set vd %s ap=%s" % (vd_name,dom0.output.strip())] 
+ 
+ 
+  result = utils.RunCmd(cmd)
+  
+  if result.failed:
+    sys.stderr.write('VD attachment failed (%s): %s\n' %
+                     (result.fail_reason, result.output))
+    return 1
+
+  result = utils.RunCmd('ls -d /sys/class/fc_host/host*/issue_lip | xargs -i echo "echo 1 > {}" | sh')
+ # device = utils.RunCmd("((pvs | grep mpath | awk '{print $1}' | sed 's#/dev/mapper/##' | sed 's/-part1//')&& (multipath -l | grep mpath | awk '{print $1}')) | sort  | uniq -u")
+
+  #Get VD uuid
+  cmd = "%s/sbin/clui.sh -c -u %s -p %s -h %s -s %s sho vd %s | awk -F ',' '{print tolower($4)}' | grep -v 'WW Lun Name' | grep - | sed 's/-//g'" % (cluiclient_path,login,password,manap,array,vd_name)
+  result = utils.RunCmd(cmd)
+  uuid = result.output
+
+  #Get multipath device
+  cmd = "multipath -ll 3%s | head -1 | awk '{print $1}'" % uuid.strip()
+  device = utils.RunCmd(cmd)
+ 
+  sys.stdout.write("/dev/mapper/%s" % device.output.strip())
+  sys.exit(0)
+
+
+if __name__ == "__main__":
+    sys.exit(main())
