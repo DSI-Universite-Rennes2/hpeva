@@ -27,10 +27,11 @@ This program creates a new Image VD file inside a HP EVA.
 It takes it's input from environment variables. Specifically the
 following variables should be present:
 
- - VOL_NAME        : The name of the new Image file
+ - VOL_NAME        : The UUID of the new Image file
  - VOL_SIZE        : The size of the new Image (in megabytes)
  - EXTP_DISK_GROUP : The EVA disk group
  - EXTP_RAID       : The EVA disk RAID type
+ - EXTP_NAME       : The VD NAME
 
 Return O after successfull creation, 1 on failure
 
@@ -62,10 +63,16 @@ def ReadEnv():
   """Read the mandatory enviromental variables
 
   """
-  name = os.getenv("VOL_NAME")
+
+  if os.getenv("EXTP_NAME") is None :  
+    name = os.getenv("VOL_NAME")
+  else :
+    name = os.getenv("EXTP_NAME")
+
   if name is None:
     sys.stderr.write('The environment variable VOL_NAME is missing.\n')
     sys.exit(1)
+
   size = str(int(os.getenv("VOL_SIZE")) // 1024)
   if size is None:
     sys.stderr.write('The environment variable VOL_SIZE is missing.\n')

@@ -25,7 +25,8 @@
 """destroy an existing EVA VD 
 This program removes an existing Image from EVA
 
- - VOL_NAME: The name of the Image to map
+ - VOL_NAME  : The UUID of the Image to map
+ - EXTP_NAME : VD_NAME
 
 """
 
@@ -54,7 +55,11 @@ def ReadEnv():
   """Read the mandatory enviromental variables
 
   """
-  name = os.getenv("VOL_NAME")
+  if os.getenv("EXTP_NAME") is None :
+    name = os.getenv("VOL_NAME")
+  else:
+    name = os.getenv("EXTP_NAME")
+  
   if name is None:
     sys.stderr.write('The environment variable VOL_NAME is missing.\n')
     sys.exit(1)

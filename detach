@@ -25,7 +25,8 @@
 """Detach an existing EVA VD 
 This program detahc an existing Image to a block device
 
- - VOL_NAME: The name of the Image to map
+ - VOL_NAME  : UUID of the Image to map
+ - EXTP_NAME : VD_NAME
 
 Returns the block device path (which maps the Image) as a string
 upon success, or 1 upon failure
@@ -56,7 +57,12 @@ def ReadEnv():
   """Read the mandatory enviromental variables
 
   """
-  name = os.getenv("VOL_NAME")
+
+  if os.getenv("EXTP_NAME") is None :
+    name = os.getenv("VOL_NAME")
+  else:
+    name = os.getenv("EXTP_NAME")
+
   if name is None:
     sys.stderr.write('The environment variable VOL_NAME is missing.\n')
     sys.exit(1)

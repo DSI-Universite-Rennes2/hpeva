@@ -5,7 +5,7 @@
 #  Author  : Sylvain Costard <at> univ-rennes2.fr
 #  Université Rennes 2
 #
-"  
+  
 ##
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,19 +24,19 @@
 
 # Based on Ganeti EXtStorageProviders code (https://code.grnet.gr/projects/extstorage)
 
-"""Maps an existing EVA VD to a block device
+"""
+Maps an existing EVA VD to a block device
 This program maps an existing Image to a block device
 e.g. /dev/mapper/{X} and returns the device path. If the mapping
 already exists, it returns the corresponding device path.
-It takes it's input from environment variables. Specifically the
+It takes it s input from environment variables. Specifically the
 following variables should be present:
 
- - VOL_NAME: The name of the Image to map
+ - VOL_NAME : UUID of the Image to map
+ - EXTP_NAME: VD_NAME
 
 Returns the block device path (which maps the Image) as a string
-upon success, or 1 upon failure
-"""
-
+upon success, or 1 upon failure"""
 
 import os
 import sys
@@ -62,9 +62,13 @@ cluiclient_path = config.get('eva','cluiclient_path')
 
 def ReadEnv():
   """Read the mandatory enviromental variables
-
   """
-  name = os.getenv("VOL_NAME")
+
+  if os.getenv("EXTP_NAME") is None :
+    name = os.getenv("VOL_NAME")
+  else :
+    name = os.getenv("EXTP_NAME")
+
   if name is None:
     sys.stderr.write('The environment variable VOL_NAME is missing.\n')
     sys.exit(1)
