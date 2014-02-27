@@ -57,7 +57,7 @@ def ReadEnv():
   """
   if os.getenv("EXTP_NAME") is None :
     name = os.getenv("VOL_NAME")
-  else:
+  else :
     name = os.getenv("EXTP_NAME")
   
   if name is None:
@@ -96,7 +96,6 @@ def main():
 
   #Remove VD
   cmd  = ["%s/sbin/clui.sh" % cluiclient_path , "-c", "-u", "%s" % login, "-p", "%s" % password, "-h", "%s" % manap, "-s", "%s" % array, "del vd %s " % vd_name] 
-  print cmd
   result = utils.RunCmd(cmd)
 
   if result.failed:

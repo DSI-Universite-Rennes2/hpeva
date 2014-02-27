@@ -42,6 +42,7 @@ import os
 import sys
 import ConfigParser
 import subprocess
+import string
 
 sys.path.append("/usr/share/ganeti")
 
@@ -110,7 +111,63 @@ def main():
   cmd = "multipath -ll 3%s | head -1 | awk '{print $1}'" % uuid.strip()
   device = utils.RunCmd(cmd)
  
-  sys.stdout.write("/dev/mapper/%s" % device.output.strip())
+
+  sys.stderr.write('Device : %s\n' % device.output.strip())
+  # LVM Part
+
+  # check if a partition already exists
+  verify = utils.RunCmd("sfdisk -V /dev/mapper/%s" % device.output.strip())
+
+  # If No partition found we create it and a PV
+  if verify.failed:
+    sys.stderr.write('No partition found. Creating...\n')
+
+    command = ["sfdisk", "/dev/mapper/%s" % device.output.strip()]
+    instructions = """
+,,8e
+;
+;
+;
+    """ 
+    pobj = subprocess.Popen(command, stdin=subprocess.PIPE,
+    stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    (output, errors) = pobj.communicate(instructions)
+
+    sys.stderr.write('Partition creation : %s ' % result.output)
+
+  else:
+    sys.stderr.write('Partition Found...\n')
+
+  sys.stderr.write('Creating a LVM Physical Volume ...\n')
+  cmd = 'pvcreate /dev/mapper/%s-part1' % device.output.strip()
+  result = utils.RunCmd(cmd)
+ 
+  if result.failed:
+    sys.stderr.write('PV Creation failed...\n')
+
+  sys.stderr.write('Creating a Volume Group ...\n')
+  cmd = "vgcreate %s /dev/mapper/%s-part1" % (vd_name,device.output.strip())
+  result = utils.RunCmd(cmd)
+ 
+  if result.failed:
+    sys.stderr.write('VG Creation failed...\n')
+
+
+  sys.stderr.write('Creating Logical Volumes ...\n')
+  vdbase=string.replace(vd_name,'VD-','')
+  vdbase=string.replace(vdbase,'-','')
+
+  cmd = "lvcreate -n %s-Log -L 2G %s" % (vdbase,vd_name)
+  result = utils.RunCmd(cmd) 
+
+  cmd = "lvcreate -n %s-OS -l 100%%FREE %s" % (vdbase,vd_name)
+  result = utils.RunCmd(cmd) 
+
+  
+
+  sys.stdout.write("/dev/%s/%s-OS" % (vd_name,vdbase))
+
+
   sys.exit(0)
 
 

@@ -60,7 +60,7 @@ def ReadEnv():
 
   if os.getenv("EXTP_NAME") is None :
     name = os.getenv("VOL_NAME")
-  else:
+  else :
     name = os.getenv("EXTP_NAME")
 
   if name is None:
@@ -93,6 +93,10 @@ def main():
   cmd = "multipath -f %s" % device
   result = utils.RunCmd(cmd)
 
+  cmd = "dmsetup remove_all"
+  result = utils.RunCmd(cmd)
+
+
   #Depresent
   dom0 = utils.RunCmd("hostname | sed 's/^./\u&/;'")
   cmd  = ["%s/sbin/clui.sh" % cluiclient_path , "-c", "-u", "%s" % login, "-p", "%s" % password, "-h", "%s" % manap, "-s", "%s" % array, "set vd %s rp=%s" % (vd_name,dom0.output.strip())] 
@@ -106,10 +110,8 @@ def main():
   #clean PV from sd devices
   utils.RunCmd("for i in `pvs 2>&1 | grep 'read failed' | awk '{print $1}' | sed 's/://' | sed 's/\/dev\///' | uniq` ; do echo 1 > /sys/block/$i/device/delete; done")  
 
-  #result = utils.RunCmd('ls -d /sys/class/fc_host/host*/issue_lip | xargs -i echo "echo 1 > {}" | sh')
-  #device = utils.RunCmd("((pvs | grep mpath | awk '{print $1}' | sed 's#/dev/mapper/##' | sed 's/-part1//')&& (multipath -l | grep mpath | awk '{print $1}')) | sort  | uniq -u")
-  
-  #sys.stdout.write("/dev/mapper/%s" % device.output.strip())
+  utils.RunCmd("/etc/init.d/multipath-tools reload")
+
   sys.exit(0)
 
 
