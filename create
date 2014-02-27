@@ -29,7 +29,7 @@ following variables should be present:
 
  - VOL_NAME        : The UUID of the new Image file
  - VOL_SIZE        : The size of the new Image (in megabytes)
- - EXTP_DISK_GROUP : The EVA disk group
+ - EXTP_DISKGROUP : The EVA disk group
  - EXTP_RAID       : The EVA disk RAID type
  - EXTP_NAME       : The VD NAME
 
@@ -78,7 +78,7 @@ def ReadEnv():
     sys.stderr.write('The environment variable VOL_SIZE is missing.\n')
     sys.exit(1)
 
-  dg = os.getenv("EXTP_DISK_GROUP")
+  dg = os.getenv("EXTP_DISKGROUP")
   if dg is None:
     dg=disk_group 	
 
