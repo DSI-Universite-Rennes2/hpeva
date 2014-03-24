@@ -41,7 +41,7 @@ import os
 import sys
 import ConfigParser
 
-sys.path.append("/usr/share/ganeti")
+sys.path.append("/usr/share/ganeti/default")
 
 from ganeti import utils
 
