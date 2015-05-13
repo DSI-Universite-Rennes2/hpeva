@@ -31,8 +31,8 @@ hpeva external storage module for ganeti
       return ReadFile(constants.RANDOM_UUID_FILE, size=18).rstrip("\n")
 
 
-
- * Patch lib/cmdlib/instance_storage.py -> GenerateDiskTemplate():
+ This patch seems not to be required since ganeti 2.12 :
+ * Patch function GenerateDiskTemplate() in lib/cmdlib/instance_storage.py :
 
       # Only for the Ext template add disk_info to params
       if template_name == constants.DT_EXT:
