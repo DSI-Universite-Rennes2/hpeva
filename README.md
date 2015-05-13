@@ -21,23 +21,23 @@ hpeva external storage module for ganeti
 
  * Patch function NewUUID() in  /usr/share/ganeti/ganeti/utils/io.py to match this one :
 
-    def NewUUID():
-      """Returns a random UUID.
-   
-      @note: This is a Linux-specific method as it uses the /proc filesystem.
-      @rtype: str
-   
-      """
-      return ReadFile(constants.RANDOM_UUID_FILE, size=18).rstrip("\n")
+        def NewUUID():
+          """Returns a random UUID.
+       
+          @note: This is a Linux-specific method as it uses the /proc filesystem.
+          @rtype: str
+       
+          """
+          return ReadFile(constants.RANDOM_UUID_FILE, size=18).rstrip("\n")
 
 
  This patch seems not to be required since ganeti 2.12 :
  * Patch function GenerateDiskTemplate() in lib/cmdlib/instance_storage.py :
 
-      # Only for the Ext template add disk_info to params
-      if template_name == constants.DT_EXT:
-        params[constants.IDISK_PROVIDER] = disk[constants.IDISK_PROVIDER]
-    +   params[constants.IDISK_NAME] = disk[constants.IDISK_NAME]
+          # Only for the Ext template add disk_info to params
+          if template_name == constants.DT_EXT:
+            params[constants.IDISK_PROVIDER] = disk[constants.IDISK_PROVIDER]
+        +   params[constants.IDISK_NAME] = disk[constants.IDISK_NAME]
 
  * restart ganeti
 
